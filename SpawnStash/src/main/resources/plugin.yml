@@ -1,18 +1,29 @@
 name: SpawnStash
-version: 1.0.0
+version: 2.0.0
 main: de.openai.spawnstash.SpawnStashPlugin
 api-version: '1.21'
 author: OpenAI
-description: Spawnt eine kleine Fake-Stash-Base an der Position des Spielers.
+
 commands:
   spawnstash:
-    description: Spawnt eine Fake-Stash-Base.
-    usage: /spawnstash [reload]
+    description: Spawnt eine gespeicherte Stash.
+    usage: /spawnstash <name>
     permission: spawnstash.use
+
+  stash:
+    description: Verwaltet gespeicherte Stashes.
+    usage: /stash <wand|save|list|delete|clear|reload>
+    permission: spawnstash.edit
+
 permissions:
   spawnstash.use:
-    description: Darf /spawnstash benutzen.
+    description: Darf gespeicherte Stashes spawnen.
     default: op
+
+  spawnstash.edit:
+    description: Darf Stashes auswählen, speichern und bearbeiten.
+    default: op
+
   spawnstash.reload:
-    description: Darf die Config neu laden.
+    description: Darf SpawnStash neu laden.
     default: op
