@@ -1,0 +1,20 @@
+name: SpawnStash
+version: 2.0.0
+main: de.openai.spawnstash.SpawnStashPlugin
+api-version: '1.21'
+author: OpenAI
+description: Speichert ausgewählte Stash-Bereiche und spawnt sie an der Spielerposition.
+commands:
+  spawnstash:
+    description: Spawnt eine gespeicherte Stash an deiner Position.
+    usage: /spawnstash <name>
+  stash:
+    description: Verwaltet Stash-Auswahlen und Vorlagen.
+    usage: /stash <wand|save|list|delete|clear|reload>
+permissions:
+  spawnstash.use:
+    description: Darf gespeicherte Stashes spawnen.
+    default: op
+  spawnstash.edit:
+    description: Darf Bereiche auswählen und Stashes speichern/löschen.
+    default: op

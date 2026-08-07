@@ -1,0 +1,7 @@
+messages:
+  prefix: "&8[&cSpawnStash&8] &7"
+  no-permission: "&cDafür hast du keine Rechte."
+
+settings:
+  # Schutz vor versehentlich riesigen Selections.
+  max-selection-volume: 50000
