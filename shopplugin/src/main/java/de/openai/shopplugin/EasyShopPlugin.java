@@ -45,7 +45,7 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
     private final Map<UUID, PendingInput> pendingInputs = new HashMap<>();
 
     private record PendingInput(InputType type, String category, int index, ItemStack item, String currency) {}
-    private enum InputType { RENAME_CATEGORY, CHANGE_PRICE, ADD_HAND_PRICE }
+    private enum InputType { RENAME_CATEGORY, RENAME_ITEM, CHANGE_PRICE, ADD_HAND_PRICE }
 
     @Override
     public void onEnable() {
@@ -62,7 +62,7 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
         Objects.requireNonNull(getCommand("shop")).setExecutor(this);
         Objects.requireNonNull(getCommand("shop")).setTabCompleter(this);
         getServer().getPluginManager().registerEvents(this, this);
-        getLogger().info("EasyShop wurde aktiviert. Standard-Währung: " + currencyProvider);
+        getLogger().info("EasyShop 1.4.0 wurde aktiviert. Standard-Währung: " + currencyProvider);
     }
 
     private boolean setupCurrencies() {
@@ -248,7 +248,7 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
             return true;
         }
 
-        if (args[0].equalsIgnoreCase("editor")) {
+        if (args[0].equalsIgnoreCase("edit") || args[0].equalsIgnoreCase("editor")) {
             if (args.length == 1) {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Dieser Befehl ist nur für Spieler.");
@@ -364,10 +364,10 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(c("&e/shop &7- Shop öffnen"));
-        sender.sendMessage(c("&e/shop editor &7- Ingame-Editor öffnen"));
+        sender.sendMessage(c("&e/shop edit &7- Ingame-Editor öffnen"));
         sender.sendMessage(c("&e/shop add hand <preis> [vault|playerpoints] [kategorie] &7- Item aus der Hand hinzufügen"));
         sender.sendMessage(c("&e/shop currency <vault|playerpoints> &7- Währung wechseln"));
-        sender.sendMessage(c("&e/shop editor <add|remove> <spieler> &7- Editor verwalten"));
+        sender.sendMessage(c("&e/shop edit <add|remove> <spieler> &7- Editor verwalten"));
         sender.sendMessage(c("&e/shop reload &7- Config neu laden"));
     }
 
@@ -410,6 +410,29 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
                 copy.put(String.valueOf(entry.getKey()), entry.getValue());
             }
             if (i == index) copy.put("currency", itemCurrency);
+            newList.add(copy);
+        }
+        shopConfig.set("items." + category, newList);
+        saveShop();
+    }
+
+    private void updateItemName(String category, int index, String newName) {
+        List<Map<?, ?>> oldList = shopConfig.getMapList("items." + category);
+        if (index < 0 || index >= oldList.size()) return;
+        List<Map<String, Object>> newList = new ArrayList<>();
+        for (int i = 0; i < oldList.size(); i++) {
+            Map<?, ?> raw = oldList.get(i);
+            Map<String, Object> copy = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : raw.entrySet()) {
+                copy.put(String.valueOf(entry.getKey()), entry.getValue());
+            }
+            if (i == index && copy.get("item") instanceof ItemStack item) {
+                ItemStack renamed = item.clone();
+                ItemMeta meta = renamed.getItemMeta();
+                meta.setDisplayName(c(newName));
+                renamed.setItemMeta(meta);
+                copy.put("item", renamed);
+            }
             newList.add(copy);
         }
         shopConfig.set("items." + category, newList);
@@ -548,6 +571,7 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
             lore.add(c("&7Währung: &f" + displayProvider(itemCurrency)));
             lore.add("");
             lore.add(c("&eLinksklick: Preis ändern"));
+            lore.add(c("&dShift + Linksklick: Item umbenennen"));
             lore.add(c("&bRechtsklick: Währung → " + displayProvider(nextItemCurrency)));
             lore.add(c("&cShift + Rechtsklick: Löschen"));
             meta.setLore(lore);
@@ -687,6 +711,11 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
                     removeItem(category, index);
                     player.sendMessage(c("&cItem wurde aus dem Shop gelöscht."));
                     openCategoryEditor(player, category);
+                } else if (click == ClickType.SHIFT_LEFT) {
+                    pendingInputs.put(player.getUniqueId(), new PendingInput(InputType.RENAME_ITEM, category, index, null, null));
+                    player.closeInventory();
+                    player.sendMessage(c("&eSchreibe jetzt den neuen Item-Namen in den Chat."));
+                    player.sendMessage(c("&7Farbcodes mit & sind erlaubt. Schreibe &ccancel &7zum Abbrechen."));
                 } else if (click.isRightClick()) {
                     List<Map<?, ?>> items = shopConfig.getMapList("items." + category);
                     if (index < 0 || index >= items.size()) return;
@@ -736,6 +765,16 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
                     getConfig().set("categories." + pending.category() + ".name", message);
                     saveConfig();
                     player.sendMessage(c("&aKategorie wurde zu &f" + message + " &aumbenannt."));
+                    openCategoryEditor(player, pending.category());
+                }
+                case RENAME_ITEM -> {
+                    if (message.length() > 64) {
+                        player.sendMessage(c("&cDer Item-Name ist zu lang. Maximal 64 Zeichen."));
+                        openCategoryEditor(player, pending.category());
+                        return;
+                    }
+                    updateItemName(pending.category(), pending.index(), message);
+                    player.sendMessage(c("&aItem wurde zu &f" + message + " &aumbenannt."));
                     openCategoryEditor(player, pending.category());
                 }
                 case CHANGE_PRICE -> {
@@ -812,9 +851,9 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) return filter(args[0], List.of("editor", "add", "currency", "reload"));
+        if (args.length == 1) return filter(args[0], List.of("edit", "editor", "add", "currency", "reload"));
         if (args.length == 2 && args[0].equalsIgnoreCase("add")) return filter(args[1], List.of("hand"));
-        if (args.length == 2 && args[0].equalsIgnoreCase("editor")) return filter(args[1], List.of("add", "remove"));
+        if (args.length == 2 && (args[0].equalsIgnoreCase("edit") || args[0].equalsIgnoreCase("editor"))) return filter(args[1], List.of("add", "remove"));
         if (args.length == 2 && args[0].equalsIgnoreCase("currency")) return filter(args[1], List.of("vault", "playerpoints"));
         if (args.length == 4 && args[0].equalsIgnoreCase("add") && args[1].equalsIgnoreCase("hand")) {
             List<String> choices = new ArrayList<>(List.of("vault", "playerpoints"));
@@ -825,7 +864,7 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
                 && normalizeCurrency(args[3]) != null) {
             return filter(args[4], Arrays.asList(editableCategories().split(", ")));
         }
-        if (args.length == 3 && args[0].equalsIgnoreCase("editor")) {
+        if (args.length == 3 && (args[0].equalsIgnoreCase("edit") || args[0].equalsIgnoreCase("editor"))) {
             return filter(args[2], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
         }
         return Collections.emptyList();
