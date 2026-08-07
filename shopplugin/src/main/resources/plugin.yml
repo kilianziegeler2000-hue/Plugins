@@ -1,0 +1,15 @@
+name: EasyShop
+version: 1.1.0
+main: de.openai.shopplugin.EasyShopPlugin
+api-version: '1.21'
+author: OpenAI
+softdepend: [PlayerPoints, Vault]
+commands:
+  shop:
+    description: Öffnet den Shop oder verwaltet ihn.
+    usage: /shop [add hand <preis> [kategorie] | reload | editor <add|remove> <spieler>]
+permissions:
+  easyshop.use:
+    default: true
+  easyshop.edit:
+    default: op

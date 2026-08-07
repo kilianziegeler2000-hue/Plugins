@@ -1,0 +1,48 @@
+# SpawnStash - leicht anpassbare Einstellungen
+
+messages:
+  prefix: "&8[&cSpawnStash&8] &7"
+  no-permission: "&cDafür hast du keine Rechte."
+  players-only: "&cDieser Befehl kann nur von Spielern benutzt werden."
+  spawned: "&aFake-Stash wurde gespawnt."
+  reloaded: "&aConfig wurde neu geladen."
+  cooldown: "&cWarte noch &e%seconds%s &cbis zur nächsten Stash."
+  unsafe-height: "&cHier ist nicht genug Platz für die Base."
+
+settings:
+  cooldown-seconds: 15
+  teleport-inside: true
+  play-sound: true
+  particles: true
+
+# Raumgröße. Ungerade Werte funktionieren am besten.
+base:
+  width: 7
+  depth: 7
+  height: 4
+
+  floor: OBSIDIAN
+  walls: DEEPSLATE_BRICKS
+  roof: OBSIDIAN
+  corner-block: CRYING_OBSIDIAN
+  light-block: SEA_LANTERN
+
+  # Innenausstattung
+  chest-material: CHEST
+  barrel-material: BARREL
+  shulker-material: PURPLE_SHULKER_BOX
+  crafting-table: true
+  ender-chest: true
+  anvil: true
+
+  # In die Fake-Kisten kommen zufällige "wertvolle" Sachen.
+  # Format: MATERIAL:min-max
+  fake-loot:
+    - "DIAMOND:2-12"
+    - "EMERALD:4-24"
+    - "GOLDEN_APPLE:1-5"
+    - "EXPERIENCE_BOTTLE:8-32"
+    - "TOTEM_OF_UNDYING:1-2"
+    - "OBSIDIAN:16-64"
+    - "ENDER_PEARL:4-16"
+    - "NETHERITE_SCRAP:1-4"

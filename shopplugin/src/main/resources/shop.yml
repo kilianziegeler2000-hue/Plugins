@@ -1,0 +1,17 @@
+# EasyShop - Items
+# Du musst diese Datei normalerweise NICHT per Hand bearbeiten:
+# Halte ein Item in der Hand und nutze:
+#   /shop add hand <preis> [kategorie]
+# Beispiel:
+#   /shop add hand 250 food
+# Ohne Kategorie wird "food" benutzt.
+#
+# Du kannst Einträge trotzdem ganz leicht hier ändern.
+# Material, Name, Lore, Enchantments, CustomModelData usw. werden beim /shop add hand
+# vollständig als ItemStack gespeichert.
+
+items:
+  stars: []
+  food: []
+  equipment: []
+  nether: []
