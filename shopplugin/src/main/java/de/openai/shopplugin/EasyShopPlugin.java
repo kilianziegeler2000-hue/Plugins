@@ -614,8 +614,13 @@ public class EasyShopPlugin extends JavaPlugin implements Listener, TabExecutor 
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(c(name));
         if (!lore.isEmpty()) meta.setLore(c(lore));
-        meta.getPersistentDataContainer().set(key("editor-action"), PersistentDataType.STRING, action);
-        if (action.equals("back")) meta.getPersistentDataContainer().set(key("back"), PersistentDataType.BYTE, (byte) 1);
+        // Der normale Shop-"Zurück"-Button darf NICHT als Editor-Aktion behandelt werden.
+        // Sonst wird er im Click-Handler vorher abgefangen und macht nichts.
+        if (action.equals("back")) {
+            meta.getPersistentDataContainer().set(key("back"), PersistentDataType.BYTE, (byte) 1);
+        } else {
+            meta.getPersistentDataContainer().set(key("editor-action"), PersistentDataType.STRING, action);
+        }
         item.setItemMeta(meta);
         return item;
     }
