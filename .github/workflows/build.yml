@@ -1,0 +1,52 @@
+name: Build Minecraft Plugins
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'shopplugin/**'
+      - 'SpawnStash/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: shopplugin
+            jar: EasyShop-1.1.0.jar
+            artifact: EasyShop
+
+          - project: SpawnStash
+            jar: spawnstash-1.0.0.jar
+            artifact: SpawnStash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Java 21 installieren
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Plugin bauen
+        run: mvn -B clean package -f "${{ matrix.project }}/pom.xml"
+
+      - name: JAR vorbereiten
+        run: |
+          mkdir -p dist
+          cp "${{ matrix.project }}/target/${{ matrix.jar }}" "dist/${{ matrix.artifact }}.jar"
+
+      - name: JAR hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}.jar
+          if-no-files-found: error
