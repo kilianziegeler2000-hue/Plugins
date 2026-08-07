@@ -1,0 +1,49 @@
+settings:
+  # auto = PlayerPoints bevorzugen, sonst Vault. Alternativ: playerpoints oder vault
+  currency-provider: "auto"
+  playerpoints-name: "Points"
+  vault-name: "$"
+  main-title: "&8Shop"
+  coming-soon-name: "&cComing Soon"
+  coming-soon-lore:
+    - "&7Diese Kategorie kommt später."
+  buy-lore:
+    - ""
+    - "&7Preis: &e%price% %currency%"
+    - "&aLinksklick zum Kaufen"
+  no-money: "&cDu hast nicht genug %currency%."
+  bought: "&aGekauft: &f%item% &7für &e%price% %currency%"
+  inventory-full: "&cDein Inventar ist voll."
+  no-permission: "&cDu darfst den Shop nicht bearbeiten."
+  added: "&aItem wurde für &e%price% %currency% &ain &f%category% &ahinzugefügt."
+  reloaded: "&aEasyShop wurde neu geladen."
+
+editors:
+  - "DeinName"
+
+categories:
+  comingsoon:
+    slot: 11
+    material: BARRIER
+    name: "&cComing Soon"
+    coming-soon: true
+  stars:
+    slot: 12
+    material: NETHER_STAR
+    name: "&eStars"
+    coming-soon: false
+  food:
+    slot: 13
+    material: BAKED_POTATO
+    name: "&bFood"
+    coming-soon: false
+  equipment:
+    slot: 14
+    material: TOTEM_OF_UNDYING
+    name: "&bEquipment"
+    coming-soon: false
+  nether:
+    slot: 15
+    material: NETHERRACK
+    name: "&cNether"
+    coming-soon: false
