@@ -33,6 +33,7 @@ import java.util.*;
 public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabExecutor {
 
     private final Map<UUID, Selection> selections = new HashMap<>();
+    private final Map<UUID, UndoSnapshot> undoSnapshots = new HashMap<>();
     private File stashesFolder;
 
     @Override
@@ -48,7 +49,7 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
         Objects.requireNonNull(getCommand("stash")).setExecutor(this);
         Objects.requireNonNull(getCommand("stash")).setTabCompleter(this);
         Bukkit.getPluginManager().registerEvents(this, this);
-        getLogger().info("SpawnStash 2.0 aktiviert.");
+        getLogger().info("SpawnStash 2.1 aktiviert.");
     }
 
     @EventHandler
@@ -135,6 +136,7 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
             send(player, "&e/stash list &7- gespeicherte Stashes");
             send(player, "&e/stash delete <name> &7- Stash löschen");
             send(player, "&e/stash clear &7- Auswahl löschen");
+            send(player, "&e/stash undo &7- zuletzt gespawnte Stash rückgängig machen");
             return true;
         }
 
@@ -145,6 +147,7 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
                 send(player, "&aAuswahl gelöscht.");
             }
             case "list" -> listStashes(player);
+            case "undo" -> undoLastPaste(player);
             case "save" -> {
                 if (args.length < 2) {
                     send(player, "&eBenutzung: /stash save <name>");
@@ -275,6 +278,25 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
         int baseY = playerBlock.getBlockY() - anchorY;
         int baseZ = playerBlock.getBlockZ() - anchorZ;
 
+        // Vor dem Einfügen den kompletten Zielbereich sichern.
+        // Damit kann /stash undo die vorherigen Blöcke und Container-Inhalte wiederherstellen.
+        UndoSnapshot snapshot = new UndoSnapshot(world);
+        for (int i = 0; i < count; i++) {
+            String path = "blocks." + i;
+            int x = baseX + yml.getInt(path + ".x");
+            int y = baseY + yml.getInt(path + ".y");
+            int z = baseZ + yml.getInt(path + ".z");
+            Block block = world.getBlockAt(x, y, z);
+            Inventory oldInv = localInventory(block.getState());
+            ItemStack[] contents = oldInv == null ? null : oldInv.getContents().clone();
+            snapshot.blocks.add(new UndoBlock(
+                    x, y, z,
+                    block.getBlockData().getAsString(),
+                    contents
+            ));
+        }
+        undoSnapshots.put(player.getUniqueId(), snapshot);
+
         // Pass 1: alle Blöcke setzen.
         for (int i = 0; i < count; i++) {
             String path = "blocks." + i;
@@ -311,6 +333,45 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
         }
 
         send(player, "&aStash '&f" + yml.getString("name", file.getName().replace(".yml", "")) + "&a' gespawnt.");
+    }
+
+    private void undoLastPaste(Player player) {
+        UndoSnapshot snapshot = undoSnapshots.remove(player.getUniqueId());
+        if (snapshot == null || snapshot.blocks.isEmpty()) {
+            send(player, "&cDu hast keine gespawnte Stash zum Rückgängig machen.");
+            return;
+        }
+
+        World world = snapshot.world;
+        if (world == null) {
+            send(player, "&cDie Welt der letzten Stash ist nicht mehr verfügbar.");
+            return;
+        }
+
+        // Pass 1: ursprüngliche Blockdaten wiederherstellen.
+        for (UndoBlock saved : snapshot.blocks) {
+            Block block = world.getBlockAt(saved.x, saved.y, saved.z);
+            try {
+                block.setBlockData(Bukkit.createBlockData(saved.data), false);
+            } catch (IllegalArgumentException ex) {
+                block.setType(Material.AIR, false);
+            }
+        }
+
+        // Pass 2: ursprüngliche Container-Inhalte wiederherstellen.
+        for (UndoBlock saved : snapshot.blocks) {
+            if (saved.inventory == null) continue;
+            Inventory inv = localInventory(world.getBlockAt(saved.x, saved.y, saved.z).getState());
+            if (inv == null) continue;
+
+            ItemStack[] restored = new ItemStack[inv.getSize()];
+            for (int slot = 0; slot < restored.length && slot < saved.inventory.length; slot++) {
+                restored[slot] = saved.inventory[slot] == null ? null : saved.inventory[slot].clone();
+            }
+            inv.setContents(restored);
+        }
+
+        send(player, "&aDie zuletzt gespawnte Stash wurde rückgängig gemacht.");
     }
 
     private Inventory localInventory(BlockState state) {
@@ -379,7 +440,7 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
             return Collections.emptyList();
         }
 
-        if (args.length == 1) return filter(args[0], List.of("wand", "save", "list", "delete", "clear", "reload"));
+        if (args.length == 1) return filter(args[0], List.of("wand", "save", "list", "delete", "clear", "undo", "reload"));
         if (args.length == 2 && args[0].equalsIgnoreCase("delete")) return filter(args[1], stashNames());
         return Collections.emptyList();
     }
@@ -393,6 +454,31 @@ public final class SpawnStashPlugin extends JavaPlugin implements Listener, TabE
     private List<String> filter(String input, List<String> values) {
         String lower = input.toLowerCase(Locale.ROOT);
         return values.stream().filter(v -> v.toLowerCase(Locale.ROOT).startsWith(lower)).toList();
+    }
+
+    private static final class UndoSnapshot {
+        private final World world;
+        private final List<UndoBlock> blocks = new ArrayList<>();
+
+        private UndoSnapshot(World world) {
+            this.world = world;
+        }
+    }
+
+    private static final class UndoBlock {
+        private final int x;
+        private final int y;
+        private final int z;
+        private final String data;
+        private final ItemStack[] inventory;
+
+        private UndoBlock(int x, int y, int z, String data, ItemStack[] inventory) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.data = data;
+            this.inventory = inventory;
+        }
     }
 
     private static final class Selection {

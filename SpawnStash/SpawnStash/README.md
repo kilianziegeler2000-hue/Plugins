@@ -1,4 +1,4 @@
-# SpawnStash 2.0
+# SpawnStash 2.1
 
 Paper 1.21.4 / Java 21.
 
@@ -14,6 +14,7 @@ Weitere Befehle:
 - `/stash list`
 - `/stash delete <name>`
 - `/stash clear`
+- `/stash undo` – setzt die zuletzt gespawnte Stash zurück und stellt die vorherigen Blöcke/Container wieder her
 - `/stash reload`
 
 Rechte:

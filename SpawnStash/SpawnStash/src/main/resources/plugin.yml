@@ -1,5 +1,5 @@
 name: SpawnStash
-version: 2.0.0
+version: 2.1.0
 main: de.openai.spawnstash.SpawnStashPlugin
 api-version: '1.21'
 author: OpenAI
@@ -10,7 +10,7 @@ commands:
     usage: /spawnstash <name>
   stash:
     description: Verwaltet Stash-Auswahlen und Vorlagen.
-    usage: /stash <wand|save|list|delete|clear|reload>
+    usage: /stash <wand|save|list|delete|clear|undo|reload>
 permissions:
   spawnstash.use:
     description: Darf gespeicherte Stashes spawnen.
